@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import PriceTracker from './PriceTracker';
 
 const ShoppingList = ({ pin, onLogout }) => {
     const [items, setItems] = useState([]);
     const [newItem, setNewItem] = useState('');
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
+    const [mode, setMode] = useState('list'); // 'list' or 'prices'
 
     useEffect(() => {
         if (!pin) {
@@ -77,47 +79,57 @@ const ShoppingList = ({ pin, onLogout }) => {
     return (
         <div className="shopping-list-container">
             <header className="shopping-header">
-                        <h1>Lista de la Compra 🛒</h1>
-                        {onLogout && (
-                            <button className="logout-btn" onClick={() => {
-                                if (window.confirm('¿Cerrar sesión?')) onLogout();
-                            }}>Cerrar sesión</button>
-                        )}
-                    </header>
-
-            {/* debug controls removed */}
-
-            <form onSubmit={addItem} className="add-item-form">
-                <input
-                    type="text"
-                    value={newItem}
-                    onChange={(e) => setNewItem(e.target.value)}
-                    placeholder="¿Qué necesitamos?"
-                />
-                <button type="submit">Añadir</button>
-            </form>
-
-            {fetchError && <p className="error-message">Error leyendo lista: {fetchError}</p>}
-
-            {loading ? (
-                <p className="loading">Cargando lista...</p>
-            ) : (
-                <ul className="items-list">
-                    {items.map((item) => (
-                        <li key={item.id} className={item.completed ? 'completed' : ''}>
-                            <div className="item-content" onClick={() => toggleComplete(item)}>
-                                <span className="checkbox">{item.completed ? '✓' : ''}</span>
-                                <span className="item-name">{item.name}</span>
-                            </div>
-                            <button onClick={() => deleteItem(item.id)} className="delete-btn">
-                                🗑️
-                            </button>
-                        </li>
-                    ))}
-                    {items.length === 0 && !loading && (
-                        <p className="empty-state">La lista está vacía. ¡Añade algo!</p>
+                <h1>Lista de la Compra 🛒</h1>
+                <div className="header-actions">
+                    <div className="tabs">
+                        <button className={mode === 'list' ? 'active' : ''} onClick={() => setMode('list')}>Lista</button>
+                        <button className={mode === 'prices' ? 'active' : ''} onClick={() => setMode('prices')}>Precios</button>
+                    </div>
+                    {onLogout && (
+                        <button className="logout-btn" onClick={() => {
+                            if (window.confirm('¿Cerrar sesión?')) onLogout();
+                        }}>Cerrar sesión</button>
                     )}
-                </ul>
+                </div>
+            </header>
+
+            {mode === 'list' ? (
+                <>
+                    <form onSubmit={addItem} className="add-item-form">
+                        <input
+                            type="text"
+                            value={newItem}
+                            onChange={(e) => setNewItem(e.target.value)}
+                            placeholder="¿Qué necesitamos?"
+                        />
+                        <button type="submit">Añadir</button>
+                    </form>
+
+                    {fetchError && <p className="error-message">Error leyendo lista: {fetchError}</p>}
+
+                    {loading ? (
+                        <p className="loading">Cargando lista...</p>
+                    ) : (
+                        <ul className="items-list">
+                            {items.map((item) => (
+                                <li key={item.id} className={item.completed ? 'completed' : ''}>
+                                    <div className="item-content" onClick={() => toggleComplete(item)}>
+                                        <span className="checkbox">{item.completed ? '✓' : ''}</span>
+                                        <span className="item-name">{item.name}</span>
+                                    </div>
+                                    <button onClick={() => deleteItem(item.id)} className="delete-btn">
+                                        🗑️
+                                    </button>
+                                </li>
+                            ))}
+                            {items.length === 0 && !loading && (
+                                <p className="empty-state">La lista está vacía. ¡Añade algo!</p>
+                            )}
+                        </ul>
+                    )}
+                </>
+            ) : (
+                <PriceTracker roomId={pin} />
             )}
         </div>
     );
